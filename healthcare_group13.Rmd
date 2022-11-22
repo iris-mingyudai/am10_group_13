@@ -225,7 +225,7 @@ vac_map <- uk_map_wgs84_with_value %>%
   theme(
     legend.position = "right"
   ) + 
-  labs(title = "")
+  labs(title = "London NHS Vacancy was above 10% \n Source: NHS Digital, 2021/22 Q4 (Mar-22)")
 ggplotly(vac_map, tooltip = "text")
 ```
 
