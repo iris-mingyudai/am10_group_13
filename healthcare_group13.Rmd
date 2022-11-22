@@ -164,6 +164,7 @@ wb2 %>%
   ) + 
   scale_color_manual(values = c(palette[1], palette[7]))
 
+
 ```
 
 ## Breaking down the cost
@@ -653,8 +654,8 @@ p_wl_18_52 <- data %>%
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 3200000, 400000), 
                      label = comma) + 
   labs(x = NULL, y = NULL, 
-       title = "Number of patients waiting over 18 and 52 weeks", 
-       subtitle = "Sep 2012 to Sep 2022", 
+       title = "More atients waiting FOREVER since the pandemic", 
+       subtitle = "Number of patients waiting over 18 and 52 weeks, Sep 2012 to Sep 2022", 
        caption = "Source: Consultant-led Referral to Treatment Waiting Times Data 2022-23"
        ) + 
   geom_vline(xintercept=as.numeric(as.Date("2020-03-01")), linetype=2, col = "black") + 
@@ -728,8 +729,8 @@ p_wl_18_52_perc <- data %>%
   scale_y_continuous(labels = scales::percent, 
                      expand = c(0, 0), breaks = seq(0, 0.6, 0.05)) + 
   labs(x = NULL, y = NULL, 
-       title = "Percentage of patients waiting over 18 and 52 weeks", 
-       subtitle = "Sep 2012 to Sep 2022", 
+       title = "More atients waiting FOREVER since the pandemic", 
+       subtitle = "Percentage of patients waiting over 18 and 52 weeks, Sep 2012 to Sep 2022", 
        caption = "Source: Consultant-led Referral to Treatment Waiting Times Data 2022-23"
        ) + 
   geom_vline(xintercept=as.numeric(as.Date("2020-03-01")), linetype=2, col = "black") + 
