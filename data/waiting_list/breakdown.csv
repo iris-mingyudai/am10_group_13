@@ -1,0 +1,44 @@
+Treatment Function Code,Treatment Function,month,Total number of incomplete pathways,Total within 18 weeks,% within 18 weeks,Total 52 plus weeks
+C_100,General Surgery Service,22-Sep,453876.00 ,257800.00 ,0.57 ,35921.00 
+C_101,Urology Service,22-Sep,379331.00 ,214699.00 ,0.57 ,26771.00 
+C_110,Trauma and Orthopaedic Service,22-Sep,792277.00 ,442787.00 ,0.56 ,60812.00 
+C_120,Ear Nose and Throat Service,22-Sep,539201.00 ,274434.00 ,0.51 ,42244.00 
+C_130,Ophthalmology Service,22-Sep,656814.00 ,410089.00 ,0.62 ,29712.00 
+C_140,Oral Surgery Service,22-Sep,294276.00 ,150847.00 ,0.51 ,21921.00 
+C_150,Neurosurgical Service,22-Sep,58754.00 ,30718.00 ,0.52 ,4535.00 
+C_160,Plastic Surgery Service,22-Sep,97560.00 ,54188.00 ,0.56 ,8820.00 
+C_170,Cardiothoracic Surgery Service,22-Sep,10858.00 ,7224.00 ,0.67 ,411.00 
+C_300,General Internal Medicine Service,22-Sep,46374.00 ,30921.00 ,0.67 ,1119.00 
+C_301,Gastroenterology Service,22-Sep,374328.00 ,223371.00 ,0.60 ,18269.00 
+C_320,Cardiology Service,22-Sep,338232.00 ,215883.00 ,0.64 ,7369.00 
+C_330,Dermatology Service,22-Sep,392591.00 ,242761.00 ,0.62 ,23331.00 
+C_340,Respiratory Medicine Service,22-Sep,178631.00 ,115351.00 ,0.65 ,3940.00 
+C_400,Neurology Service,22-Sep,213764.00 ,123464.00 ,0.58 ,11324.00 
+C_410,Rheumatology Service,22-Sep,128539.00 ,83290.00 ,0.65 ,3243.00 
+C_430,Elderly Medicine Service,22-Sep,24737.00 ,20787.00 ,0.84 ,100.00 
+C_502,Gynaecology Service,22-Sep,549281.00 ,300396.00 ,0.55 ,40076.00 
+X02,Other - Medical Services,22-Sep,542875.00 ,375446.00 ,0.69 ,12526.00 
+X03,Other - Mental Health Services,22-Sep,18304.00 ,12871.00 ,0.70 ,106.00 
+X04,Other - Paediatric Services,22-Sep,375299.00 ,223902.00 ,0.60 ,15775.00 
+X05,Other - Surgical Services,22-Sep,441465.00 ,269848.00 ,0.61 ,29004.00 
+X06,Other - Other Services,22-Sep,164462.00 ,121607.00 ,0.74 ,4208.00 
+X01,Other,22-Sep,1542405.00 ,1003674.00 ,0.65 ,61619.00 
+C_100,General Surgery,19-Sep,327287.00 ,273715.00 ,0.84 ,166.00 
+C_101,Urology,19-Sep,238124.00 ,195848.00 ,0.82 ,106.00 
+C_110,Trauma & Orthopaedics,19-Sep,525801.00 ,434930.00 ,0.83 ,365.00 
+C_120,"Ear, Nose & Throat (ENT)",19-Sep,313752.00 ,255004.00 ,0.81 ,48.00 
+C_130,Ophthalmology,19-Sep,447182.00 ,376613.00 ,0.84 ,41.00 
+C_140,Oral Surgery,19-Sep,169946.00 ,134823.00 ,0.79 ,23.00 
+C_150,Neurosurgery,19-Sep,35037.00 ,27578.00 ,0.79 ,42.00 
+C_160,Plastic Surgery,19-Sep,57602.00 ,46759.00 ,0.81 ,39.00 
+C_170,Cardiothoracic Surgery,19-Sep,8403.00 ,6999.00 ,0.83 ,6.00 
+C_300,General Medicine,19-Sep,44515.00 ,39927.00 ,0.90 ,0.00 
+C_301,Gastroenterology,19-Sep,224820.00 ,195772.00 ,0.87 ,60.00 
+C_320,Cardiology,19-Sep,216760.00 ,189139.00 ,0.87 ,69.00 
+C_330,Dermatology,19-Sep,242710.00 ,212091.00 ,0.87 ,7.00 
+C_340,Thoracic Medicine,19-Sep,105501.00 ,93183.00 ,0.88 ,8.00 
+C_400,Neurology,19-Sep,142992.00 ,119017.00 ,0.83 ,3.00 
+C_410,Rheumatology,19-Sep,96427.00 ,84850.00 ,0.88 ,3.00 
+C_430,Geriatric Medicine,19-Sep,20357.00 ,19458.00 ,0.96 ,0.00 
+C_502,Gynaecology,19-Sep,285408.00 ,244554.00 ,0.86 ,54.00 
+X01,Other,19-Sep,914259.00 ,794511.00 ,0.87 ,265.00 

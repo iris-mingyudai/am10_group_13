@@ -12,12 +12,12 @@ output:
     code_folding: hide
 ---
 
-<!-- setup -->
+
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 ```
+
 
 ```{r, library, include = FALSE}
 library(scales)
@@ -55,6 +55,7 @@ library(sf)
 library(stringr)
 library(showtext)
 ```
+
 
 ```{r, them_function_and_palette, include = FALSE}
 theme_nhs <- function() {
@@ -165,28 +166,224 @@ wb2 %>%
 
 ```
 
-## San@Breaking down the cost
+## Breaking down the cost
 
-Analysing the NHS costs. Would be interesting to see how that has also changed over time. Creating sth like this:
+```{r}
+dataf <- data.frame(
+  Year=c("2007/8","2008/9","2009/10","2010/11","2011/12", "2012/13", "2013/14", "2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22") ,  
+  Funding=c(111.4, 116.6 ,124.1 , 124.5, 125.7, 126, 128.5, 131.2, 134.9, 135.7, 138.4, 141.4, 148.9, 191.01, 190.3))
 
-![cost over time](pic_framework/cost_time.png)
-- Picture Source: [https://news.sky.com/nhs-in-numbers]
+p = ggplot(data= dataf, aes(x=Year, y=Funding, group = 1)) +
+    geom_line(linetype= "dashed", color="blue", size=0.5)+
+    geom_point(color="red", size=2) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+ 
+rect <- data.frame(xmin="2019/20", xmax= "2021/22", ymin=148.9, ymax=Inf)
 
-- Useful resources: [https://www.england.nhs.uk/costing-in-the-nhs/national-cost-collection/]
+p + geom_rect(data=rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax),
+              color="grey20",
+              alpha=0.1,
+              inherit.aes = FALSE) +
+  labs(
+   x = "Year",
+    y = "Funding (£bn)",
+    title = "COVID-19 caused sharp increases in NHS spending",
+    subtitle = "NHS Funding by year",
+    caption = "Source:The King's Fund analysis of HM Treasury data"
+  ) +
+
+annotate("text", x = "2020/21", y = 153, label = "italic(COVID-19)",size = 2.2,
+  parse = TRUE) + 
+  theme_nhs() + 
+  theme(
+    panel.grid.major = element_line(color = "grey80"),  
+    panel.grid.minor = element_line(color = "grey80")
+  )
+```
+
+```{r}
+datag = data.frame(x = c("Social Protection", "Health", "General Public Services", "Education"), y = c(299, 217, 109, 100))
+
+
+p <- ggplot(datag, aes(x=x, y=y)) +
+  geom_segment(
+    aes(x=x, xend=x, y=0, yend=y),
+    color=ifelse(datag$x %in% c("Health"), "orange", "grey20"),
+    size=ifelse(datag$x %in% c("Health"), 1.3, 0.7)
+  ) +
+  geom_point(
+    color=ifelse(datag$x %in% c("Health"), "orange", "grey20"),
+    size=ifelse(datag$x %in% c("Health"), 5, 2)) +
+  labs(
+    x = "Sector",
+    y = "Funding (£bn)",
+    title = "Health is the second highest expenditure",
+    subtitle = "Government Expenditure by Sector 2021/22",
+    caption= "Source:Public spending: a brief introduction-Philip Brien(07 October, 2022)"
+  ) +
+  coord_flip() + 
+  theme_nhs() + 
+  theme(
+    panel.grid.major = element_line(color = "grey80"),  
+    panel.grid.minor = element_line(color = "grey80")
+  )
+p
+```
+
+```{r}
+#https://digital.nhs.uk/data-and-information/publications/statistical/acute-patient-level-activity-and-costing/2019-20#resources
+cost <- read.csv("data/healthcare-spending/Acute Patient Level Activity and Costing 2019-20 CSV data.csv") %>%
+  janitor::clean_names()
+
+cost1 <- cost %>%
+  filter(summary_type=="Total Cost",
+         org_name=="ALL SUBMITTERS",
+         breakdown!="Total Cost",
+         breakdown_group_2!="Unknown")
+
+kid <- c("0 years", "01-04 years", "05-09 years", "10-14 years")
+young_adult <- c("15-19 years", "20-24 years", "25-29 years")
+adult <- c("30-34 years", "35-39 years", "40-44 years", "45-49 years")
+elderly <- c("50-54 years", "55-59 years", "60-64 years", "65-69 years")
+old <- c("70-74 years", "75-79 years", "80-84 years", "85-89 years", "90-94 years", "95 years or older")
+
+cost2 <- cost1 %>%
+  filter(breakdown_group_1 %in% c("Female", "Male")) %>%
+  summarize(age=ifelse(breakdown_group_2 %in% kid, "0-14", ifelse(breakdown_group_2 %in% young_adult, "15-29", ifelse(breakdown_group_2 %in% adult, "30-49", ifelse(breakdown_group_2 %in% elderly, "50-69", "70+")))),
+            breakdown_group_1,
+            value) %>%
+  group_by(age, breakdown_group_1) %>%
+  summarize(total_cost=sum(as.numeric(value)))
+
+```
+
+
+```{r}
+
+cost_age <- cost2 %>%
+  ungroup %>%
+  group_by(age)%>%
+  summarize(total_age=sum(as.numeric(total_cost)))
+
+cost_gender <- cost2 %>%
+  ungroup %>%
+  group_by(breakdown_group_1)%>%
+  summarize(total_gender=sum(as.numeric(total_cost)))
+
+source <- c(cost_age$age, rep("Cost", times = nrow(cost_gender)))
+target <- c(rep("Cost", times = nrow(cost_age)), cost_gender$breakdown_group_1)
+
+df_sanky <- data.frame(
+  source = source,
+  target = target,
+  value = c(cost_age$total_age, cost_gender$total_gender)
+)
+
+```
+
+```{r snakey}
+library(networkD3)
+
+nodes <- data.frame(
+  name=c(as.character(df_sanky$source), 
+  as.character(df_sanky$target)) %>% unique()
+)
+
+df_sanky$IDsource <- match(df_sanky$source, nodes$name)-1 
+df_sanky$IDtarget <- match(df_sanky$target, nodes$name)-1
+
+node_color <- 'd3.scaleOrdinal() .domain(["0-14", "15-29", "30-49", "50-69", "70+", 
+"Cost", "Female", "Male"]) .range(["#235eb8", "#235eb8", "#756f9f" , "#8a8191", "#9c9481", "#aba771", "#b9bb5e", "#c6cf45"])'
+
+p1 <- sankeyNetwork(Links = df_sanky, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", 
+              colourScale = node_color,
+              sinksRight=FALSE) 
+
+
+p1
+
+
+```
+
+
+```{r 1}
+
+#how do costs compare?
+cost3 <- cost %>%
+  filter(org_name=="ALL SUBMITTERS",
+         breakdown!="Total Cost",
+         breakdown=="Diagnosis") %>%
+  pivot_wider(names_from=summary_type,
+              values_from=value) %>%
+  janitor::clean_names() %>%
+  mutate(cost_per_visit = as.numeric(total_cost)/as.numeric(activity_count)) %>%
+  arrange(#desc(activity_count), 
+          desc(cost_per_visit))
+
+chosen_diseases <- c("Pregnancy, childbirth and the puerperium", "Cardiac conditions", "Poisoning (inc overdose)", "Diabetes and other endocrinological conditions", "Diseases of the respiratory system", "Bites/stings", "Infectious disease", "Diseases of the digestive system", "Mental and behavioural disorders")
+
+cost3 %>%
+  filter(breakdown_group_1 %in% chosen_diseases) %>%
+  ggplot(aes(x=fct_reorder(breakdown_group_1, as.numeric(cost_per_visit)), y=cost_per_visit, fill=breakdown_group_1)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  theme_nhs() + 
+  scale_fill_manual(values=c(palette)) + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank()) +
+  labs(title = "Costs per visit vary significantly",
+       subtitle="Average cost per visit by category",
+       caption="Source: Digital NHS, Acute Patient Level Activity and Costing, 2019-20")
+```
+
 
 # Workforce of Healthcare
 
-## Athos@Healthcare workforce in the history
+## Healthcare workforce in the history
 
-Employees of the health and social care systems in history: 
-- History vs today 2000-2019-today
-- Brexit impact - sth like below about EU workers
 
-![labor_force1](pic_framework/labor_inflow1.jpg)
-![labor_force2](pic_framework/labor_inflow2.jpg)
+```{r, warning=FALSE, message=FALSE}
+nhs_earnings<-read_csv("data/healthcare-spending/NHS Staff Annual Earnings Estimates to June 2022 in NHS Trusts and other core organisations in England, Provisional Statistics CSV text file.csv") %>%
+  clean_names()
 
-## Drishti@Staff Shortages
+nhs_earnings<-nhs_earnings%>%
+  mutate(year=format(date, format="%Y"))%>%
+  mutate(month=format(date, format="%m"))%>%
+  filter(!is.na(sample_size))%>%
+  mutate(gov_spending=amount*sample_size)%>%
+  mutate(year=format(date, format="%Y"))%>%
+  mutate(month=format(date, format="%m"))
 
+nhs_earnings_sep<-nhs_earnings%>%
+  filter(month=="08")%>%
+  filter(payment_type=="PUBGRP_010_BASIC_PAY_PER_FTE")%>%
+  filter(staff_group=="All staff")
+```
+
+```{r}
+countperyear<-nhs_earnings%>%
+  filter(payment_type=="PUBGRP_010_BASIC_PAY_PER_FTE")%>%
+  filter(staff_group=="All staff")
+
+
+nhs_earnings_sep<-nhs_earnings%>%
+  filter(month=="08")%>%
+  filter(payment_type=="PUBGRP_010_BASIC_PAY_PER_FTE")%>%
+  filter(staff_group=="All staff")
+
+
+
+g<-ggplot(countperyear,aes(x=date, y=sample_size/1000000))+geom_line()+
+  labs(x="Date",y="Number of Workers (million)",title="Steady increase in NHS workers since 2013",subtitle = "Number of emplyees over time", caption = "NHS Workforce Statistics - July 2022 (NHS, 2022)")+
+  geom_point(data=nhs_earnings_sep, aes(x=date, y=sample_size/1000000), colour="#F8766D") + 
+  theme_nhs()
+g
+```
+
+
+## Staff Shortages
 
 ```{r}
 vacancy <- read.csv("data/vacancy/vacancy_region.csv") %>% 
@@ -204,8 +401,6 @@ uk_map <- read_sf("data/vacancy/NHS_shape/NHS_Commissioning_Regions_April_2016_G
 
 uk_map_wgs84 <-  uk_map %>%
   st_transform(4326)
-
-st_geometry(uk_map_wgs84)
 ```
 
 ```{r}
@@ -217,7 +412,7 @@ uk_map_wgs84_with_value <- uk_map_wgs84 %>%
 ```{r, message=FALSE, warning=FALSE}
 vac_map <- uk_map_wgs84_with_value %>% 
   ggplot(aes()) +
-  geom_sf(aes(fill = vacancy, text = paste(nhscr16nm, "\nVacancy rate: ", vacancy * 100, "%", sep = "")), colour = "#ffffff", size = 0.1) + 
+  geom_sf(aes(fill = vacancy, text = paste(nhscr16nm, "\nVacancy rate: ", vacancy, "%", sep = "")), colour = "#ffffff", size = 0.1) + 
   scale_fill_gradientn("%Vacancy", colors = c("#153A70", "#235eb8", "#296ED6", "#3082FC"), 
                        labels = c("10%", "9%", "8%", "7%"), 
                        breaks = c(0.1, 0.09, 0.08, 0.07)) + 
@@ -230,38 +425,69 @@ ggplotly(vac_map, tooltip = "text")
 ```
 
 
-[Staff shortages in which areas](https://news.sky.com/nhs-in-numbers)
+```{r, read_physicians}
+physicians <- read_csv('data/vacancy/physicians_per_1000.csv', show_col_types = FALSE)
+```
 
-- Exploring nationalities of NHS staff (by role e.g. doctor/nurse etc)
-- Exploring in which areas there are biggest staff shortages 
-    - How does that correspond to the nationalities? (The biggest shortages are for nurses - where do nurses - come from currently? Are a large number of them from the EU?)
-- Graph source: [https://www.bma.org.uk/advice-and-support/nhs-delivery-and-workforce/workforce/nhs-medical-staffing-data-analysis]
 
-![staff_short](pic_framework/staff_short.png)
+```{r clean_and_extract, warning=FALSE, message=FALSE}
+
+physicians_clean <- physicians %>%
+  select("Country Name", "2010", "2019") %>%
+  pivot_longer(cols = 2:3, names_to = "year", values_to = "physicians_per_1000") %>%
+  mutate(year = as.Date(paste(year, 1, 1, sep = "-")),
+         year = year(ymd(year))) %>%
+  clean_names()
+  
+
+p1 <- physicians_clean %>%
+  filter(year == 2019) %>%
+  drop_na() %>%
+  arrange(desc(physicians_per_1000)) %>%
+  top_n(10) %>%
+  mutate(color = as.factor(ifelse(country_name == "United Kingdom", 1, 0))) %>% 
+  ggplot(aes(x = physicians_per_1000, y = fct_reorder(country_name, physicians_per_1000, max, desc = TRUE))) +
+  geom_col(aes(fill = color)) + 
+  scale_fill_manual(values = two_color) + 
+  theme_nhs() + 
+  labs(y = NULL, x = 2019) + 
+  theme(
+    panel.grid.major.x = element_line(color = "grey80"),  
+    panel.grid.minor.x = element_line(color = "grey80")
+  )
+
+p2 <- physicians_clean %>%
+  filter(year == 2010) %>%
+  drop_na() %>%
+  arrange(desc(physicians_per_1000)) %>%
+  top_n(10) %>%
+  mutate(color = as.factor(ifelse(country_name == "United Kingdom", 1, 0))) %>% 
+  ggplot(aes(x = physicians_per_1000, y = fct_reorder(country_name, physicians_per_1000, max, desc = TRUE))) +
+  geom_col(aes(fill = color)) + 
+  scale_fill_manual(values = two_color) + 
+  theme_nhs() + 
+  labs(y = NULL, x = 2010) + 
+  theme(
+    panel.grid.major.x = element_line(color = "grey80"),  
+    panel.grid.minor.x = element_line(color = "grey80")
+  )
+
+(p2 + p1) + 
+  plot_annotation(
+    title = "Physicians per 1k population increased from 2010 to 2019", 
+    subtitle = "Year 2010 v.s. Year 2019", 
+    caption = "NHS Vacancy Statistics England April 2015 – June 2022 Experimental Statistics"
+  ) &
+  theme_nhs() 
+```
 
 ## How has the NHS salary changed given inflation?
-
 
 ```{r, Merge Average weekly earnings, warning=FALSE, message=FALSE}
 
 # NHS Staff Earnings Estimates (Source: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-staff-earnings-estimates)
 nhs_salary <- read_csv("data/healthcare-spending/NHS Staff Annual Earnings Estimates to June 2022 in NHS Trusts and other core organisations in England, Provisional Statistics CSV text file.csv") %>%
   clean_names()
-
-nhs_salary1 <- nhs_salary %>%
-  filter((payment_type=="PUBGRP_020_EARNINGS") & (staff_group != "All staff")) %>%
-  mutate(year = year(date)) %>%
-  group_by(staff_group, year) %>%
-  mutate(yearly_earnings=mean(amount)) %>%
-  ggplot(aes(x=year, y=yearly_earnings, color=staff_group)) +
-  geom_point() +
-  geom_line() + 
-  theme_nhs() + 
-  theme(legend.position = "none", 
-        panel.grid.major = element_line(color = "grey80"),  
-        panel.grid.minor = element_line(color = "grey80"))
-  
-nhs_salary1 
 
 #Average weekly earnings of people in the UK Whole Economy Level (£): Seasonally Adjusted Total Pay Excluding Arrears (Source:https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/timeseries/kab9/emp)
 
@@ -310,7 +536,7 @@ salary_data1 %>%
 
 
 
-# Mingyu@Patient Experience
+# Patient Experience
 
 
 ## Data cleaning
@@ -355,7 +581,7 @@ Since the pandemic, the number of patients waiting for treatment has been increa
 
 The waiting list's size has accually doubled compared with that 6 years ago. 
 
-```{r, plot_wl_incomplete_RTT, message=FALSE, warning=FALSE}
+```{r, plot_wl_incomplete_RTT3, message=FALSE, warning=FALSE}
 data <- wl_ts %>% 
   filter(category == "Incomplete_RTT_pathways" &
          index %in% c("Num_within_18_weeks", "Num_more_18_weeks") & 
@@ -390,7 +616,7 @@ p_wl_incomplete_rtt
 
 ### Forever Waiting...
 
-```{r, plot_wl_incomplete_RTT, message=FALSE, warning=FALSE}
+```{r, plot_wl_incomplete_RTT2, message=FALSE, warning=FALSE}
 data <- wl_ts %>% 
   filter(category == "Incomplete_RTT_pathways" &
          index %in% c("Num_more_18_weeks", "Num_more_52_weeks") & 
@@ -461,14 +687,9 @@ p_wl_18_52 <- data %>%
 p_wl_18_52
 ```
 
-### Percentage of forever waiting
+### %orever waiting
 
-```{r}
-data
-```
-
-
-```{r, Percentage of forever waiting}
+```{r, Percentage of forever waiting, message=FALSE, warning=FALSE}
 data <- wl_ts %>% 
   filter((category == "Incomplete_RTT_pathways") &
          (index %in% c("perc_within_18_weeks", "perc_52_weeks")) & 
@@ -541,10 +762,66 @@ p_wl_18_52_perc <- data %>%
 p_wl_18_52_perc
 ```
 
+### Breakdown
 
-# What are the good aspects of NHS? 
+```{r}
+bd <- read.csv("data/waiting_list/breakdown.csv")
+```
 
-## Health service outcome
+```{r}
+names(bd) <- c("function_code", "function_name", "month", "total_wl", "total_within_18w", "perc_within_18w", "total_52plusw")
+```
+
+
+```{r}
+bd_clean <- bd %>% 
+  mutate(
+    month = as.Date(paste("01-", substr(month, 4, 6), 
+                               "-", substr(month, 1, 2), sep=""), format = "%d-%b-%y")
+  )
+```
+
+
+```{r}
+total_22 <- (bd_clean %>% filter(month == as.Date("2022-09-01")) %>% select(function_code, total_wl) %>% rename("Sep-2022" = "total_wl"))
+total_19 <- (bd_clean %>% filter(month == as.Date("2019-09-01")) %>% select(function_code, total_wl) %>% rename("Sep-2019" = "total_wl"))
+total_2yr <- total_19 %>% 
+  left_join(total_22, by = "function_code") %>% 
+  left_join(
+  bd_clean %>% 
+    filter(month == as.Date("2022-09-01")) %>% 
+    select(function_code, function_name), by = "function_code"
+) %>% 
+  select(function_name, `Sep-2019`, `Sep-2022`)
+```
+
+
+```{r}
+total_2yr_4plot <- total_2yr %>% 
+  rowwise() %>% 
+  mutate( mean_tot = mean(c(`Sep-2019`,`Sep-2022`) )) %>% 
+  arrange(mean_tot) %>% 
+  mutate(function_name=factor(function_name, function_name))
+ 
+# Plot
+total_2yr_4plot %>% filter(function_name != "Other") %>% 
+ggplot() +
+  geom_segment( aes(x=function_name, xend=function_name, 
+                    y=`Sep-2019`, yend=`Sep-2022`), color="grey20") +
+  geom_point( aes(x=function_name, y=`Sep-2019`), color=two_color[1], size=3 ) +
+  geom_point( aes(x=function_name, y=`Sep-2022`), color=two_color[2], size=3 ) +
+  coord_flip()+
+  theme_nhs() +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_line(color = "grey80")
+  ) +
+  scale_y_continuous(label = comma) + 
+  labs(
+    title = "Waiting List Expansion by service", 
+    subtitle = "Sep 2019 v.s. Sep 2022", 
+    y = "Total Number of Incomplete Pathways", x = "")
+```
 
 # Reference
 
@@ -556,12 +833,4 @@ p_wl_18_52_perc
 [Health at a Glance 2021: OECD Indicators, OECD Publishing, Paris.](https://www.oecd-ilibrary.org/docserver/ae3016b9-en.pdf?expires=1668858641&id=id&accname=guest&checksum=9EED8139CB133279FCC5822C30D734C3)
 </li>
 [Papanicolas I, Mossialos E, Gundersen A, Woskie L, Jha A K. Performance of UK National Health Service compared with other high income countries: observational study, BMJ, 2019.](https://www.bmj.com/content/367/bmj.l6326)
-<li>
-
-</li>
-
-<li>
-
-</li>
-
 </ol>
