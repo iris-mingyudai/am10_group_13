@@ -1,0 +1,227 @@
+---
+title: "How is the UK healthcare system performing"
+author: "Group 13: Amelia Przybyl, Athos Gyalui, Drishti Hoskote, Mingyu Dai, San Kashyap"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    theme: sandstone
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+---
+
+<!-- setup -->
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r, library, include = FALSE}
+library(scales)
+library(tidyverse) # the usual stuff: dplyr, readr, and other goodies
+library(lubridate)
+library(ggmap)
+library(ggrepel)
+library(gridExtra)
+library(pander)
+library(here)
+library(janitor)
+library(skimr)
+library(leaflet)
+library(leaflet.extras)
+library(tmap)
+library(tmaptools)
+library(hrbrthemes)
+library(mapview)
+library(viridis)
+library(plotly)
+library(ggtext)
+library(GGally) # for correlation-scatter plot matrix
+library(treemapify)
+library(RColorBrewer)
+library(extrafont)
+library(ggThemeAssist)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(vroom)
+library(patchwork)
+library(ggalt)
+library(ggplot2)
+```
+
+```{r, them_function_and_palette, include = FALSE}
+theme_nhs <- function() {
+  font = "Avenir Next"
+  theme_minimal()
+  theme(
+    panel.grid = element_blank(), 
+    panel.background = element_blank(), 
+    axis.line = element_line(size = 0.5, colour = "grey80"), 
+    # Remove legend
+    legend.position = "none", 
+    legend.key = element_rect(fill = "transparent"), 
+    axis.text.x = element_text(color = "grey20", size = 10, family = font),
+    axis.text.y = element_text(color = "grey20", size = 10, family = font),
+    axis.title.x = element_text(color = "grey20", size = 12, angle = 0, 
+                                hjust = .5, vjust = 0, family = font),
+    axis.title.y = element_text(color = "grey20", size = 12, 
+                                hjust = .5, vjust = .5, family = font), 
+    plot.title = element_text(color = "grey20", size = 14, 
+                              family = font), 
+    legend.text = element_text(color = "grey20", size = 10, family = font), 
+    legend.title = element_text(color = "grey20", size = 12, family = font)
+  )
+}
+palette <- c('#235eb8', '#595dac', '#756f9f', '#8a8191', '#9c9481', '#aba771', '#b9bb5e', '#c6cf45', '#d1e41a')
+two_color <- c('#235eb8', '#d1e41a')
+```
+
+<!-- setup -->
+
+# Healthcare spending over the years
+
+```{r visualisation 1}
+
+#Current health expenditure (% of GDP) (Source: https://data.worldbank.org/indicator/SH.XPD.CHEX.GD.ZS)
+wb_data <- read_csv("data/healthcare-spending/world_bank_data.csv") %>%
+  clean_names()
+
+skimr::skim(wb_data)
+
+wb_data <- wb_data %>%
+  remove_empty(which=c("rows", "cols"), quiet=FALSE)
+
+# get time series data
+wb2 <- wb_data %>%
+  pivot_longer(cols=c("x2000", "x2001", "x2002", "x2003", "x2004", "x2005", "x2006", "x2007", "x2008", "x2009", "x2010", "x2011", "x2012", "x2013", "x2014", "x2015", "x2016", "x2017", "x2018", "x2019"),
+               names_to="Year",
+               values_to="Spending") %>% 
+  mutate(Year = as.integer(substr(Year, 2, 5)))
+head(wb2)
+
+```
+
+#How has the NHS salary changed given inflation?
+
+```{r visualisations, warning=FALSE, message=FALSE}
+
+eu <- c("AUT", "GBR", "BEL", "BGR", "CYP", "HRV", "CZE", "DNK", "EST", "FIN", "FRA", "DEU", "GRC", "HUN", "IRL", "ITA", "LVA", "LTU", "LUX", "MLT", "NLD", "POL", "PRT", "ROM", "SVK", "SVN", "ESP", "SWE")
+
+wb2 %>%
+  filter(country_code %in% eu) %>%
+  mutate(is_gbr = ifelse(country_code=="GBR", 1, 0)) %>%
+  group_by(is_gbr, Year) %>%
+  summarize(spending_avg=mean(Spending, na.rm=TRUE)) %>%
+  mutate(label = ifelse(Year != 2019, NA_character_, ifelse(is_gbr==1, "GBR", "EU"))) %>% 
+  ggplot(aes(x=Year, y=spending_avg, color=as.factor(is_gbr))) + 
+  geom_vline(
+    xintercept = seq(1999, 2019, 1), color = "grey80", size = .4) + 
+  geom_segment(
+    data = tibble(y = seq(0, 11, 1), x1 = 1999, x2 = 2019),
+    aes(x = x1, xend = x2, y = y, yend = y),
+    inherit.aes = FALSE,
+    color = "grey80",
+    size = .4
+  ) +
+  geom_segment(
+    data = tibble(y = 0, x1 = 1999, x2 = 2019),
+    aes(x = x1, xend = x2, y = y, yend = y),
+    inherit.aes = FALSE,
+    color = "grey80",
+    size = .4
+  ) +
+  geom_point() +
+  labs(title = "<b> UK spends relatively more on healthcare than the EU average</b><br>
+       <span style = 'font-size:12pt'>Health Expenditure as % of GDP in <span style='color:#235eb8'> EU countries </span> and <span style='color:#d1e41a'> the UK </span></span>",
+       y = NULL, x = NULL, 
+       caption = "Source: The World Bank (https://data.worldbank.org/indicator/SH.XPD.CHEX.GD.ZS)") + 
+  theme_nhs() + 
+  scale_x_continuous(breaks = seq(1999, 2019, 1), limits = c(1999, 2021), expand = c(0, 0)) + 
+  scale_y_continuous(breaks = seq(0, 11, 1), labels = function(x) paste0(x, "%"), limits = c(0, 11)) + 
+  theme(axis.text.x = element_text(angle=45, hjust = 1, vjust = 1), 
+        axis.ticks = element_line(color = "grey80",),
+        plot.title.position = "plot",
+        plot.title = ggtext::element_textbox_simple(size=16)) + 
+  geom_text_repel(
+    aes(color = as.factor(is_gbr), label = label),
+    xlim = c(2019, NA),
+    family = "Helvetica",
+    fontface = "bold",
+    size = 4, 
+    segment.size = .7,
+    segment.alpha = .5,
+    segment.linetype = "dotted"
+  ) + 
+  scale_color_manual(values = c(palette[1], palette[7]))
+
+```
+
+
+```{r, Merge Average weekly earnings, warning=FALSE, message=FALSE}
+
+# NHS Staff Earnings Estimates (Source: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-staff-earnings-estimates)
+nhs_salary <- read_csv("data/healthcare-spending/NHS Staff Annual Earnings Estimates to June 2022 in NHS Trusts and other core organisations in England, Provisional Statistics CSV text file.csv") %>%
+  clean_names()
+
+nhs_salary1 <- nhs_salary %>%
+  filter((payment_type=="PUBGRP_020_EARNINGS") & (staff_group != "All staff")) %>%
+  mutate(year = year(date)) %>%
+  group_by(staff_group, year) %>%
+  mutate(yearly_earnings=mean(amount)) %>%
+  ggplot(aes(x=year, y=yearly_earnings, color=staff_group)) +
+  geom_point() +
+  geom_line() + 
+  theme_nhs() + 
+  theme(legend.position = "none", 
+        panel.grid.major = element_line(color = "grey80"),  
+        panel.grid.minor = element_line(color = "grey80"))
+  
+nhs_salary1 
+
+#Average weekly earnings of people in the UK Whole Economy Level (£): Seasonally Adjusted Total Pay Excluding Arrears (Source:https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/timeseries/kab9/emp)
+
+uk_salary <- read_csv("data/healthcare-spending/UK_salary.csv", skip=7)%>%
+  clean_names() %>%
+  filter(important_notes %in% c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021")) %>%
+  mutate(yearly_salary_uk=x2*52) %>%
+  rename(year=important_notes) %>%
+  summarize(year, yearly_salary_uk)
+
+nhs_salary2 <- nhs_salary %>%
+  filter(payment_type == "PUBGRP_020_EARNINGS",
+         staff_group == "All staff") %>%
+  mutate(year = year(date)) %>%
+  group_by(year) %>%
+  summarize(yearly_earnings=sum(amount)) %>%
+  filter(year != "2022") %>%
+  rename(yearly_earnings_nhs=yearly_earnings)
+
+salary_data <- merge(uk_salary, nhs_salary2, by="year")
+
+salary_data1 <- pivot_longer(salary_data,
+             cols=2:3,
+             names_to="type",
+             values_to="yearly_salary")
+```
+
+```{r, nhs_v_avg_plot}
+salary_data1 %>%
+  ggplot(aes(x=year, y=yearly_salary, color=type)) +
+  geom_point() + 
+  theme_nhs() + 
+  theme(legend.position = "none", 
+        panel.grid.major = element_line(color = "grey80"),  
+        panel.grid.minor = element_line(color = "grey80"),
+        plot.title.position = "plot",
+        plot.title = ggtext::element_textbox_simple(size=16)) + 
+  scale_color_manual(values = c(palette[1], palette[7])) +
+  labs(title = "<b> NHS salaries are bad... but maybe it's just a sign of a wider problem?</b><br>
+       <span style = 'font-size:12pt'> Average salary (£) over the years in the <span style='color:#235eb8'>NHS</span> compared to the <span style='color:#d1e41a'>UK average </span></span>",
+       y = NULL, x = NULL, 
+       caption = "Source: ONS Whole Economy Level (£): Seasonally Adjusted Total Pay, NHS Staff Earning Estimates")
+
+```
