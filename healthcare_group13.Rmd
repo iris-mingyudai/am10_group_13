@@ -688,7 +688,7 @@ p_wl_18_52 <- data %>%
 p_wl_18_52
 ```
 
-### %orever waiting
+### %Forever waiting
 
 ```{r, Percentage of forever waiting, message=FALSE, warning=FALSE}
 data <- wl_ts %>% 
@@ -819,7 +819,7 @@ ggplot() +
   ) +
   scale_y_continuous(label = comma) + 
   labs(
-    title = "Waiting List Expansion by service", 
+    title = "Waiting List Expansion across all services", 
     subtitle = "Sep 2019 v.s. Sep 2022", 
     y = "Total Number of Incomplete Pathways", x = "")
 ```
